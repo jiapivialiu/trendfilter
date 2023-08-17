@@ -190,3 +190,5 @@ Eigen::ArrayXd get_lambda_seq(const NumericVector& x, const Eigen::VectorXd& y,
   return ArrayXd::LinSpaced(n_lambda,
       std::log(lambda_max), std::log(lambda_min)).exp();
 }
+
+

@@ -1,14 +1,25 @@
 Package: trendfilter
-Title: Univariate trend filtering.
+Title: Univariate trend filtering
 Version: 1.0.0
-Authors@R: c(
-  person("Addison", "Hu",
-         role = c("cre"),
-         email = "mail@huisaddison.com"))
 Date: 2023-07-01
+Authors@R: 
+    person("Addison", "Hu", , "mail@huisaddison.com", role = "cre")
 Description: Implementation of univariate trend filtering.
 License: MIT + file LICENSE
-Imports: Rcpp (>= 1.0.10)
-LinkingTo: Rcpp, RcppEigen, dspline
-RoxygenNote: 7.2.3
+Depends: 
+    Matrix
+Imports: 
+    dspline,
+    Rcpp (>= 1.0.10)
+Suggests: 
+    KFAS,
+    testthat (>= 3.0.0)
+LinkingTo: 
+    dspline,
+    Rcpp,
+    RcppEigen
+Remotes:
+    glmgen/dspline
+Config/testthat/edition: 3
 Encoding: UTF-8
+RoxygenNote: 7.2.3
