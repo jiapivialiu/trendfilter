@@ -42,11 +42,11 @@ Eigen::SparseMatrix<double> identity(int n) {
 }
 
 Eigen::SparseMatrix<double> diagonal(Eigen::ArrayXd diag) {
-  std::cout << "getting size";
+  Rcpp::Rcout << "getting size" << std::endl;
   int n = diag.size();
-  std::cout << "initializating sparse matrix";
+  Rcpp::Rcout << "initializating sparse matrix" << std::endl;
   SparseMatrix<double> D(n, n);
-  std::cout << "setting diagonal entries";
+  Rcpp::Rcout << "setting diagonal entries" << std::endl;
   D.diagonal() = diag;
   return D;
 }
@@ -102,7 +102,7 @@ Eigen::VectorXd project_polynomials(const NumericVector& x, const VectorXd& y,
   VectorXd beta = qr.solve((y.array()*sqrt_weights).matrix());
   VectorXd projection = basis_mat*beta;
   if (qr.info() > 0) {
-    std::cerr << "Eigen QR solve returned nonzero exit status.\n";
+    Rcpp::Rcout << "Eigen QR solve returned nonzero exit status.\n" << std::endl;
   }
   return projection;
 }

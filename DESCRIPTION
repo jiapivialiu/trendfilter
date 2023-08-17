@@ -10,6 +10,7 @@ Depends:
     Matrix
 Imports: 
     dspline,
+    RcppEigen,
     Rcpp (>= 1.0.10)
 Suggests: 
     KFAS,

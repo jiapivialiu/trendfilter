@@ -44,7 +44,7 @@ void LinearSystem::compute(const SparseMatrix<double>& A, bool tridiag) {
     std::tie(a, b, c) = extract_tridiag(A);
     cp = tridiag_forward(a, b, c);
   } else {
-    // Setting the pivot threshold to be negative forces SparseQR to be 
+    // Setting the pivot threshold to be negative forces SparseQR to be
     // maximally conservative in dropping columns, which is important when
     // the Gram matrix is ill-conditioned (which often is the case for
     // unequally spaced inputs.
@@ -93,7 +93,7 @@ VectorXd init_u(const VectorXd& residual, const SparseMatrix<double>& dk_mat,
 // [[Rcpp::export]]
 Eigen::VectorXd admm_single_lambda(int n, const Eigen::VectorXd& y,
     const Eigen::ArrayXd& weights, int k,
-    const Eigen::VectorXd& theta_init, 
+    const Eigen::VectorXd& theta_init,
     const Eigen::SparseMatrix<double>& penalty_mat,
     const Eigen::SparseMatrix<double>& dk_mat,
     double lam, int max_iter, double rho,
@@ -131,11 +131,11 @@ Eigen::VectorXd admm_single_lambda(int n, const Eigen::VectorXd& y,
         wy + rho * (dk_mat.transpose() * (alpha + u)),
         tridiag);
     if (computation_info > 1) {
-      std::cerr << "Eigen Sparse QR solve returned nonzero exit status.\n";
+      Rcpp::Rcout << "Eigen Sparse QR solve returned nonzero exit status.\n" << std::endl;
     }
     tmp = dk_mat*theta - u;
     // alpha update
-    tf_dp(n-k, tmp.data(), lam/rho, alpha.data()); 
+    tf_dp(n-k, tmp.data(), lam/rho, alpha.data());
     // u update
     u += alpha - dk_mat*theta;
     double cur_objective = tf_objective(y, theta, weights, lam, penalty_mat);
@@ -238,11 +238,11 @@ Rcpp::List admm_single_lambda_with_tracking(NumericVector x,
         wy + rho * (dk_mat.transpose() * (alpha + u)),
         tridiag);
     if (computation_info > 1) {
-      std::cerr << "Eigen Sparse QR solve returned nonzero exit status.\n";
+      Rcpp::Rcout << "Eigen Sparse QR solve returned nonzero exit status.\n" << std::endl;
     }
     tmp = dk_mat*theta - u;
     // alpha update
-    tf_dp(n-k, tmp.data(), lam/rho, alpha.data()); 
+    tf_dp(n-k, tmp.data(), lam/rho, alpha.data());
     // u update
     u += alpha - dk_mat*theta;
     objective_vec[iter] = tf_objective(y, theta, weights, lam, penalty_mat);
