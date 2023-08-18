@@ -44,13 +44,13 @@ Rcpp::List df1step_test(double y,
                         Eigen::MatrixXd Pinf,
                         int rankp);
 
-void kftfcpp(const Eigen::VectorXd& y, 
-             int k, 
-             double lambda, 
+void kftfcpp(const Eigen::VectorXd& y,
+             int k,
+             double lambda,
              Eigen::VectorXd& theta);
 
-Eigen::VectorXd kftf_cpp_test(Eigen::VectorXd y, 
-                              int k, 
+Eigen::VectorXd kftf_cpp_test(Eigen::VectorXd y,
+                              int k,
                               double lambda);
 
 #endif
