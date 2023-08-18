@@ -187,7 +187,10 @@ void kftfcpp(const Eigen::VectorXd& y,
   MatrixXd Pt = MatrixXd::Zero(k * k, n + 1);
   MatrixXd P1inf = MatrixXd::Identity(k, k);
   MatrixXd Pinf = MatrixXd::Zero(k * k, n + 1);
-  Pinf.col(0) = P1inf.reshaped(k * k, 1);
+  // matrix.reshaped() is in Eigen 3.4.0 (2+ yrs old), but not in current
+  // RcppEigen (see https://github.com/RcppCore/RcppEigen/issues/103)
+  // but we can seemingly convert to array and assign back to matrix
+  Pinf.col(0) = P1inf.array();
   // save first row of each P1 & P1inf for easier computation of theta:
   // MatrixXd Pt_res = MatrixXd::Zero(k, n + 1);    // for P1
   // MatrixXd Pinf_res = MatrixXd::Zero(k, n + 1);  // for P1inf
@@ -214,8 +217,8 @@ void kftfcpp(const Eigen::VectorXd& y,
     Finf(d) = Finf_b;
     Kt.col(d) = A * P1 * Z.transpose();
     Kinf.col(d) = A * P1inf * Z.transpose();
-    Pt.col(d + 1) = P1.reshaped(k * k, 1);
-    Pinf.col(d + 1) = P1inf.reshaped(k * k, 1);
+    Pt.col(d + 1) = P1.array();
+    Pinf.col(d + 1) = P1inf.array();
     Rcpp::Rcout << "d = " << d << std::endl;
     d++;
   }
@@ -226,7 +229,7 @@ void kftfcpp(const Eigen::VectorXd& y,
     Ft(i) = Ft_b;
     Kt.col(i) = Kt_b;
     at.col(i + 1) = a1;
-    Pt.col(i + 1) = P1.reshape(k * k, 1);
+    Pt.col(i + 1) = P1.array();
     Rcpp::Rcout << "i = " << i << std::endl;
   }
 
@@ -244,7 +247,7 @@ void kftfcpp(const Eigen::VectorXd& y,
     L0 -= Kt.col(i) * Z;
     r = Z * vt(i) / Ft(i) + r * L0;
     P1 = Map<ArrayXd>(Pt.data() + i * k * k, P1.size());
-    theta[i] = at.col(i)(0) + r * Pt_res.col(i);
+    // theta[i] = at.col(i)(0) + r * Pt_res.col(i);
   }
 
   for (int i = d - 1; i >= 0; i--) {
@@ -257,7 +260,7 @@ void kftfcpp(const Eigen::VectorXd& y,
     r1 = Z * vt(i) / Finf(i);
     r1 += r1 * L0 + r * L1;
     r = r * L0;
-    theta(i) = at.col(i)(0) + r * Pt_res.col(i) + r1 * Pinf_res.col(i);
+    // theta(i) = at.col(i)(0) + r * Pt_res.col(i) + r1 * Pinf_res.col(i);
   }
 }
 
