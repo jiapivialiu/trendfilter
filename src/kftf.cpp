@@ -184,10 +184,10 @@ void kftfcpp(const Eigen::VectorXd& y,
   VectorXd a1 = VectorXd::Zero(k);
   MatrixXd at = MatrixXd::Zero(k, n + 1);
   MatrixXd P1 = MatrixXd::Zero(k, k);
-  MatrixXd Pt = MatrixXd::Zero(k * k, n + 1)
+  MatrixXd Pt = MatrixXd::Zero(k * k, n + 1);
   MatrixXd P1inf = MatrixXd::Identity(k, k);
   MatrixXd Pinf = MatrixXd::Zero(k * k, n + 1);
-  Pinf.col(0) = P1inf.reshape(k * k, 1);
+  Pinf.col(0) = P1inf.reshaped(k * k, 1);
   // save first row of each P1 & P1inf for easier computation of theta:
   // MatrixXd Pt_res = MatrixXd::Zero(k, n + 1);    // for P1
   // MatrixXd Pinf_res = MatrixXd::Zero(k, n + 1);  // for P1inf
@@ -214,8 +214,8 @@ void kftfcpp(const Eigen::VectorXd& y,
     Finf(d) = Finf_b;
     Kt.col(d) = A * P1 * Z.transpose();
     Kinf.col(d) = A * P1inf * Z.transpose();
-    Pt.col(d + 1) = P1.reshape(k * k, 1);
-    Pinf.col(d + 1) = P1inf.reshape(k * k, 1);
+    Pt.col(d + 1) = P1.reshaped(k * k, 1);
+    Pinf.col(d + 1) = P1inf.reshaped(k * k, 1);
     Rcpp::Rcout << "d = " << d << std::endl;
     d++;
   }
@@ -230,6 +230,7 @@ void kftfcpp(const Eigen::VectorXd& y,
     Rcpp::Rcout << "i = " << i << std::endl;
   }
 
+  for (int i=0; i < n; i++) theta(i) = at(0, i);
   return;
 
   // backward
