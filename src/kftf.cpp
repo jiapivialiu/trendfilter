@@ -70,7 +70,7 @@ List f1step_test(double y,
   double Ft;
   VectorXd Kt(a);
   f1step(y, Z, ZZ, H, A, RQR, a, P, vt, Ft, Kt);
-  
+
   List list = List::create(Named("a") = a, _["P"] = P, _["vt"] = vt,
                            _["Ft"] = Ft, _["Kt"] = Kt);
   return list;
@@ -90,13 +90,13 @@ void df1step(double y,
              double& Finf) {
   double tol = 1.490116e-08;  // sqrt(.Machine$double.eps);
   int k = a.size();
-  
+
   VectorXd Mt = P * Z.transpose();
   Ft = Z * P * Z.transpose() + H;
   VectorXd Minf = Pinf * Z.transpose();
   Finf = Z * Pinf * Z.transpose();
   vt = y - Z * a;
-  
+
   double finv;
   if (Finf > tol) {  // should always happen
     finv = 1 / Finf;
@@ -115,12 +115,12 @@ void df1step(double y,
   }
   if (Ft < tol)
     Ft = 0;
-  
+
   a = A * a;
   P = A * P * A.transpose();
   P += RQR;
   Pinf = A * Pinf * A.transpose();
-  
+
   // Fix possible negative definiteness, should never happen
   for (int i = 0; i < k; i++) {
     if (P(i,i) < 0) {
@@ -149,16 +149,16 @@ List df1step_test(double y,
   double Ft;
   double Finf;
   df1step(y, Z, H, A, RQR, a, P, Pinf, rankp, vt, Ft, Finf);
-  
+
   List out = List::create(
     Named("vt") = vt, _["Ft"] = Ft, _["Finf"] = Finf, _["a"] = a,
                       _["P"] = P, _["Pinf"] = Pinf, _["rankp"] = rankp);
   return out;
 }
 
-void kftfcpp(const Eigen::VectorXd& y, 
-             int k, 
-             double lambda, 
+void kftfcpp(const Eigen::VectorXd& y,
+             int k,
+             double lambda,
              Eigen::VectorXd& theta) {
   // define transition matrix A
   MatrixXd A = MatrixXd::Zero(k, k);
@@ -171,14 +171,14 @@ void kftfcpp(const Eigen::VectorXd& y,
   for (int i = 0; i < k; i++) {
     A(i + 1, i) = 1;
   }
-  
+
   int n = y.size();
   RowVectorXd Z = RowVectorXd::Zero(k);
   Z(0) += 1;
   MatrixXd ZZ = Z.transpose() * Z;
   VectorXd H = VectorXd::Ones(n);
   VectorXd R = VectorXd::Zero(k);
-  R(0) -= 1;
+  R(0) += 1;
   double Q = 1 / lambda;
   MatrixXd RQR = R * R.transpose() * Q;
   VectorXd a1 = VectorXd::Zero(k);
@@ -192,7 +192,7 @@ void kftfcpp(const Eigen::VectorXd& y,
   MatrixXd Pt_res = MatrixXd::Zero(k, n + 1);    // for P1
   MatrixXd Pinf_res = MatrixXd::Zero(k, n + 1);  // for P1inf
   Pinf_res.col(0) = P1inf.row(0);
-  
+
   // forward
   int d = 0;
   int rankp = k;
@@ -205,7 +205,7 @@ void kftfcpp(const Eigen::VectorXd& y,
   MatrixXd Kt = MatrixXd::Zero(k, n);
   MatrixXd Kinf = MatrixXd::Zero(k, n);
   VectorXd Kt_b = VectorXd::Zero(k);
-  
+
   for (d = 0; d < n - 1; d++) {
     df1step(y(d), Z, H(d), A, RQR, a1, P1, P1inf, rankp, vt_b, Ft_b, Finf_b);
     at.col(d + 1) = a1;
@@ -226,7 +226,7 @@ void kftfcpp(const Eigen::VectorXd& y,
       break;
     }
   }
-  
+
   for (int i = d; i < n; i++) {
     vt(i) = y(i) - Z * a1;
     f1step(y(i), Z, ZZ, H(i), A, RQR, a1, P1, vt_b, Ft_b, Kt_b);
@@ -236,13 +236,13 @@ void kftfcpp(const Eigen::VectorXd& y,
     Map<ArrayXd>(Pt.data() + (i + 1) * k * k, P1.size()) = P1;
     Pt_res.col(i + 1) = P1.row(0);
   }
-  
+
   // backward
   RowVectorXd r = VectorXd::Zero(k);
   RowVectorXd r1 = VectorXd::Zero(k);
   MatrixXd L0 = MatrixXd::Zero(k, k);
   MatrixXd L1 = MatrixXd::Zero(k, k);
-  
+
   for (int i = n - 1; i >= d; i--) {
     L0 = A;
     L0 -= Kt.col(i) * Z;
@@ -250,7 +250,7 @@ void kftfcpp(const Eigen::VectorXd& y,
     P1 = Map<ArrayXd>(Pt.data() + i * k * k, P1.size());
     theta[i] = at.col(i)(0) + r * Pt_res.col(i);
   }
-  
+
   for (int i = d - 1; i >= 0; i--) {
     P1 = Map<ArrayXd>(Pt.data() + i * k * k, P1.size());
     P1inf = Map<ArrayXd>(Pinf.data() + i * k * k, P1inf.size());
@@ -270,6 +270,6 @@ Eigen::VectorXd kftf_cpp_test(Eigen::VectorXd y, int k, double lambda) {
   int n = y.size();
   VectorXd theta(n);
   kftfcpp(y, k, lambda, theta);
-  
+
   return theta;
 }
