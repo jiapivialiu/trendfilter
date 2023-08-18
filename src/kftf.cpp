@@ -94,7 +94,7 @@ void df1step(double y,
   VectorXd Mt = P * Z.transpose();
   Ft = Z * P * Z.transpose() + H;
   VectorXd Minf = Pinf * Z.transpose();
-  Finf = Z * Pinf * Z.transpose();
+  Finf = Z * Minf;
   vt = y - Z * a;
 
   double finv;
@@ -174,24 +174,24 @@ void kftfcpp(const Eigen::VectorXd& y,
 
   int n = y.size();
   RowVectorXd Z = RowVectorXd::Zero(k);
-  Z(0) += 1;
+  Z(0) = 1;
   MatrixXd ZZ = Z.transpose() * Z;
   VectorXd H = VectorXd::Ones(n);
   VectorXd R = VectorXd::Zero(k);
-  R(0) += 1;
+  R(0) = 1;
   double Q = 1 / lambda;
   MatrixXd RQR = R * R.transpose() * Q;
   VectorXd a1 = VectorXd::Zero(k);
   MatrixXd at = MatrixXd::Zero(k, n + 1);
   MatrixXd P1 = MatrixXd::Zero(k, k);
-  ArrayXd Pt = ArrayXd::Zero(k * k * (n + 1));
+  MatrixXd Pt = MatrixXd::Zero(k * k, n + 1)
   MatrixXd P1inf = MatrixXd::Identity(k, k);
-  ArrayXd Pinf = ArrayXd::Zero(k * k * (n + 1));
-  Map<ArrayXd>(Pinf.data(), P1.size()) = P1inf;
+  MatrixXd Pinf = MatrixXd::Zero(k * k, n + 1);
+  Pinf.col(0) = P1inf.reshape(k * k, 1);
   // save first row of each P1 & P1inf for easier computation of theta:
-  MatrixXd Pt_res = MatrixXd::Zero(k, n + 1);    // for P1
-  MatrixXd Pinf_res = MatrixXd::Zero(k, n + 1);  // for P1inf
-  Pinf_res.col(0) = P1inf.row(0);
+  // MatrixXd Pt_res = MatrixXd::Zero(k, n + 1);    // for P1
+  // MatrixXd Pinf_res = MatrixXd::Zero(k, n + 1);  // for P1inf
+  // Pinf_res.col(0) = P1inf.row(0);
 
   // forward
   int d = 0;
@@ -206,7 +206,7 @@ void kftfcpp(const Eigen::VectorXd& y,
   MatrixXd Kinf = MatrixXd::Zero(k, n);
   VectorXd Kt_b = VectorXd::Zero(k);
 
-  for (d = 0; d < n - 1; d++) {
+  while (rankp > 0 && d < n) {
     df1step(y(d), Z, H(d), A, RQR, a1, P1, P1inf, rankp, vt_b, Ft_b, Finf_b);
     at.col(d + 1) = a1;
     vt(d) = vt_b;
@@ -214,28 +214,23 @@ void kftfcpp(const Eigen::VectorXd& y,
     Finf(d) = Finf_b;
     Kt.col(d) = A * P1 * Z.transpose();
     Kinf.col(d) = A * P1inf * Z.transpose();
-    // not sure I understand the below
-    Map<ArrayXd>(Pt.data() + (d + 1) * k * k, P1.size()) = P1;
-    Map<ArrayXd>(Pinf.data() + (d + 1) * k * k, P1inf.size()) = P1inf;
-    Pt_res.col(d + 1) = P1.row(0);  // save first row
-    Pinf_res.col(d + 1) = P1inf.row(0);
-    // we should _ensure_ that rankp is changing, (print it)
-    // just to be sure we're not trapped here
-    if (rankp <= 0) {
-      d++;
-      break;
-    }
+    Pt.col(d + 1) = P1.reshape(k * k, 1);
+    Pinf.col(d + 1) = P1inf.reshape(k * k, 1);
+    Rcpp::Rcout << "d = " << d << std::endl;
+    d++;
   }
 
   for (int i = d; i < n; i++) {
-    vt(i) = y(i) - Z * a1;
     f1step(y(i), Z, ZZ, H(i), A, RQR, a1, P1, vt_b, Ft_b, Kt_b);
+    vt(i) = vt_b;
     Ft(i) = Ft_b;
     Kt.col(i) = Kt_b;
     at.col(i + 1) = a1;
-    Map<ArrayXd>(Pt.data() + (i + 1) * k * k, P1.size()) = P1;
-    Pt_res.col(i + 1) = P1.row(0);
+    Pt.col(i + 1) = P1.reshape(k * k, 1);
+    Rcpp::Rcout << "i = " << i << std::endl;
   }
+
+  return;
 
   // backward
   RowVectorXd r = VectorXd::Zero(k);
