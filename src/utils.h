@@ -38,10 +38,15 @@ Eigen::VectorXd get_lambda_seq_r(Eigen::VectorXd lambda, double lambda_max,
 
 int calc_degrees_of_freedom(Eigen::VectorXd const &v, int k, double tol = 1e-8);
 
-// Workarounds for interfacing with dspline
+bool is_equal_space(Rcpp::NumericVector x, double space_tolerance_ratio);
+
+
+// Workarounds for interfacing with dspline / tvdenoising
 Eigen::VectorXd Dkv(Eigen::VectorXd v, int k, const NumericVector& xd,
                     bool tf_weighting = false);
 Eigen::VectorXd Dktv(Eigen::VectorXd v, int k, const NumericVector& xd);
-bool is_equal_space(Rcpp::NumericVector x, double space_tolerance_ratio);
+Eigen::VectorXd tf_dp(Eigen::VectorXd v, double lambda);
+Eigen::VectorXd tf_dp_weight(Eigen::VectorXd v, double lambda, Eigen::ArrayXd w);
+
 
 #endif

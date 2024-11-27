@@ -21,6 +21,10 @@ get_dk_mat <- function(k, xd, tf_weighting) {
     .Call(`_trendfilter_get_dk_mat`, k, xd, tf_weighting)
 }
 
+get_penalty_mat <- function(k, xd) {
+    .Call(`_trendfilter_get_penalty_mat`, k, xd)
+}
+
 get_lambda_max <- function(x, y, weights, k) {
     .Call(`_trendfilter_get_lambda_max`, x, y, weights, k)
 }

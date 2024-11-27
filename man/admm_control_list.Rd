@@ -24,7 +24,7 @@ Lagrangian penalty parameter \eqn{\rho}.}
 \item{linear_solver}{Integer. Solver for the linear system in ADMM when
 k > 1: \code{kalman_filter} for Kalman filter or \code{sparse_qr} for sparse QR decomposition.}
 
-\item{space_tolerance_ratio}{Double. The tolerance ratio of equally spaced signals.}
+\item{space_tolerance_ratio}{Double. The tolerance ratio of to detect that the signal is equally spaced.}
 
 \item{...}{not used}
 }

@@ -50,16 +50,20 @@ test_that("test a single iterate of linear system solvers yields same results", 
   rho <- 2
   # Scenario 1
   Dkx <- dspline::d_mat(k1, x1, FALSE)
-  theta <- solve(diag(weig1) + rho * Matrix::crossprod(Dkx),
-                 diag(weig1) %*% y1 + rho * t(as.matrix(Dkx)) %*% mn1)[,1]
+  theta <- as.vector(Matrix::solve(
+    Diagonal(n1, weig1) + rho * Matrix::crossprod(Dkx),
+    weig1 * y1 + rho * Matrix::crossprod(Dkx, mn1)
+  ))
   theta_sparseQR <- linear_single_solve_test(1, y1, weig1, x1, rho, mn1)
   theta_kf <- linear_single_solve_test(2, y1, weig1, x1, rho, mn1)
   expect_equal(theta_kf, theta)
   expect_equal(theta_sparseQR, theta)
   # Scenario 2
   Dkx <- dspline::d_mat(k2, x2, FALSE)
-  theta <- solve(diag(weig2) + rho * Matrix::crossprod(Dkx),
-                 diag(weig2) %*% y2 + rho * t(as.matrix(Dkx)) %*% mn2)[,1]
+  theta <- as.vector(Matrix::solve(
+    Diagonal(n2, weig2) + rho * Matrix::crossprod(Dkx),
+    weig2 * y2 + rho * Matrix::crossprod(Dkx, mn2)
+  ))
   theta_sparseQR <- linear_single_solve_test(1, y2, weig2, x2, rho, mn2)
   theta_kf <- linear_single_solve_test(2, y2, weig2, x2, rho, mn2)
   expect_equal(theta_kf, theta)
@@ -93,29 +97,38 @@ test_that("test linear solvers yield same estimates for single lambda", {
 test_that("test linear solvers run with no errors for lambda sequences", {
   nlam <- 10
   # Scenario 1
-  mod_kf <- trendfilter(
-    y1, x1, weights = weig1, k = k1, nlambda = nlam,
-    control = trendfilter_control_list(
-      admm_control = admm_control_list(linear_solver = "kalman_filter")))
-  expect_no_error(mod_kf)
-  mod_sparse_qr <- trendfilter(
-    y1, x1, weights = weig1, k = k1, nlambda = nlam,
-    control = trendfilter_control_list(
-      admm_control = admm_control_list(linear_solver = "sparse_qr")))
-  expect_no_error(mod_sparse_qr)
+  expect_no_error(
+    mod_kf <- trendfilter(
+      y1, x1, weights = weig1, k = k1, nlambda = nlam,
+      control = trendfilter_control_list(
+        admm_control = admm_control_list(linear_solver = "kalman_filter"))
+    )
+  )
+  expect_no_error(
+    mod_sparse_qr <- trendfilter(
+      y1, x1, weights = weig1, k = k1, nlambda = nlam,
+      control = trendfilter_control_list(
+        admm_control = admm_control_list(linear_solver = "sparse_qr"))
+    )
+  )
   # equal estimates from the first model
   expect_equal(mod_kf$theta[,1], mod_sparse_qr$theta[,1])
   # Scenario 2
-  mod_kf <- trendfilter(
-    y2, x2, weights = weig2, k = k2, nlambda = nlam,
-    control = trendfilter_control_list(
-      admm_control = admm_control_list(linear_solver = "kalman_filter")))
-  expect_no_error(mod_kf)
-  mod_sparse_qr <- trendfilter(
-    y2, x2, weights = weig2, k = k2, nlambda = nlam,
-    control = trendfilter_control_list(
-      admm_control = admm_control_list(linear_solver = "sparse_qr")))
-  expect_no_error(mod_sparse_qr)
+  skip("The rest of this takes too long to run.")
+  expect_no_error(
+    mod_kf <- trendfilter(
+      y2, x2, weights = weig2, k = k2, nlambda = 2,
+      control = trendfilter_control_list(
+        admm_control = admm_control_list(linear_solver = "kalman_filter"))
+    )
+  )
+  expect_no_error(
+    mod_sparse_qr <- trendfilter(
+      y2, x2, weights = weig2, k = k2, nlambda = 2,
+      control = trendfilter_control_list(
+        admm_control = admm_control_list(linear_solver = "sparse_qr"))
+    )
+  )
   # equal estimates from the first model
   expect_equal(mod_kf$theta[,1], mod_sparse_qr$theta[,1])
 })

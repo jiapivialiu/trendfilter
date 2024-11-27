@@ -23,12 +23,13 @@ adj_mean1 <- rnorm(n - k)
 rho <- 1.0
 
 # construct D mat
+library(Matrix)
 Dkx0 <- dspline::d_mat(k, x0, FALSE)
 tDkx0 <- t(as.matrix(Dkx0))
-DtDkx0 <- Matrix::crossprod(Dkx0)
+DtDkx0 <- crossprod(Dkx0)
 Dkx1 <- dspline::d_mat(k, x1, FALSE)
 tDkx1 <- t(as.matrix(Dkx1))
-DtDkx1 <- Matrix::crossprod(Dkx1)
+DtDkx1 <- crossprod(Dkx1)
 
 # averaged squared error between A*x and b in the linear system A*x=b
 f_mse <- function(A, x, b) {

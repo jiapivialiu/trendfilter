@@ -5,12 +5,10 @@
 #include <Eigen/Sparse>
 #include <Rcpp.h>
 #include <RcppEigen.h>
-#include "linearsystem.h"
+#include <tvdenoising.h>
 #include "utils.h"
+#include "linearsystem.h"
 #include "kf_utils.h"
-extern "C"{
-  #include "tf_dp.h"
-}
 
 // [[Rcpp::depends(RcppEigen)]]
 
@@ -68,10 +66,10 @@ VectorXd init_u(const VectorXd& residual, const NumericVector& xd, int k,
   return qr.solve((residual.array()*weights).matrix());
 }
 
-void admm_single_lambda(int n, const Eigen::VectorXd& y, const NumericVector& xd, 
+void admm_single_lambda(int n, const Eigen::VectorXd& y, const NumericVector& xd,
   const Eigen::ArrayXd& weights, int k, Eigen::Ref<Eigen::VectorXd> theta,
   Eigen::Ref<Eigen::VectorXd> alpha, Eigen::Ref<Eigen::VectorXd> u, int& iter,
-  double& obj_val, const Eigen::SparseMatrix<double>& dk_mat_sq, 
+  double& obj_val, const Eigen::SparseMatrix<double>& dk_mat_sq,
   const Eigen::MatrixXd& denseD, const Eigen::VectorXd& s_seq, double lam,
   int max_iter, double rho, double tol = 1e-5, int linear_solver = 2,
   bool equal_space = false) {
@@ -99,7 +97,7 @@ void admm_single_lambda(int n, const Eigen::VectorXd& y, const NumericVector& xd
     if (iter % 1000 == 0) Rcpp::checkUserInterrupt(); // check if killed
 
     // theta update
-    std::tie(theta, computation_info) = linear_system.solve(y, weights, 
+    std::tie(theta, computation_info) = linear_system.solve(y, weights,
         alpha + u, k, xd, rho, denseD, s_seq, linear_solver, equal_space);
     // if (computation_info > 1) {
     //  std::cerr << "Eigen Sparse QR solve returned nonzero exit status.\n";
@@ -107,7 +105,7 @@ void admm_single_lambda(int n, const Eigen::VectorXd& y, const NumericVector& xd
     Dth_tmp = Dkv(theta, k, xd);
     tmp = Dth_tmp - u;
     // alpha update
-    tf_dp(n-k, tmp.data(), lam/rho, alpha.data());
+    alpha = tf_dp(tmp, lam / rho);
     // u update
     u += alpha - Dth_tmp;
     // double cur_objective = tf_objective(y, theta, xd, weights, lam, k);
@@ -122,16 +120,11 @@ void admm_single_lambda(int n, const Eigen::VectorXd& y, const NumericVector& xd
   // Rcpp::Rcout << iter << ": rr = " << rr << " ss = " << ss << std::endl;
 }
 
-/*
- * Tech debt: because tf_dp is implemented in C and expects y.data() (and
- * weights.data(), cannot qualify y as a const even though we never intend to
- * modify it.
- */
 // [[Rcpp::export]]
 Rcpp::List admm_lambda_seq(
     NumericVector x,
-    Eigen::VectorXd y,
-    Eigen::ArrayXd weights,
+    Eigen::VectorXd const y,
+    Eigen::ArrayXd const weights,
     int k,
     Eigen::VectorXd lambda,
     int nlambda = 50,
@@ -160,8 +153,7 @@ Rcpp::List admm_lambda_seq(
   // Use DP solution for k=0.
   if (k == 0) {
     for (int i = 0; i < nlambda; i++) {
-      tf_dp_weight(n, y.data(), weights.data(), lambda[i],
-                   theta.col(i).data());
+      theta.col(i) = tf_dp_weight(y, lambda[i], weights);
       objective_val[i] = tf_objective(y, theta.col(i), x, weights, lambda[i], k);
       dof[i] = calc_degrees_of_freedom(theta.col(i), k);
     }
@@ -190,13 +182,13 @@ Rcpp::List admm_lambda_seq(
       Eigen::NumTraits<double>::epsilon()) : space_tolerance_ratio);
     // initialize with the size of nonzero values in `dk_mat`
     denseD = MatrixXd::Zero(n - k, k + 1);
-    // if using Kalman filter, save the rightmost nonzero value per row in 
-    //  `dk_mat` for unevenly space signals. For equally spaced signals, 
+    // if using Kalman filter, save the rightmost nonzero value per row in
+    //  `dk_mat` for unevenly space signals. For equally spaced signals,
     //  simplify it to one value.
     s_seq = equal_space ? VectorXd::Zero(1) : VectorXd::Zero(n);
     configure_denseD(x, denseD, s_seq, dk_mat, k, equal_space);
   }
-  
+
   Eigen::MatrixXd alpha(n-k, nlambda);
 
   // Initialize ADMM variables
@@ -209,8 +201,8 @@ Rcpp::List admm_lambda_seq(
   for (int i = 0; i < nlambda; i++) {
     Rcpp::checkUserInterrupt();
     admm_single_lambda(n, y, x, weights, k,
-      theta.col(i), alpha.col(i), u, 
-      iters[i], objective_val[i], 
+      theta.col(i), alpha.col(i), u,
+      iters[i], objective_val[i],
       dk_mat_sq, denseD, s_seq, lambda[i], max_iter, lambda[i]*rho_scale,
       tol, linear_solver, equal_space);
     dof[i] = calc_degrees_of_freedom(alpha.col(i), k);
@@ -230,80 +222,72 @@ Rcpp::List admm_lambda_seq(
   return out;
 }
 
+// The below is legacy code, currently unused.
 
-Rcpp::List admm_single_lambda_with_tracking(NumericVector x,
-    Eigen::VectorXd& y, const Eigen::ArrayXd& weights, int k,
-    double lam, int max_iter, double rho,
-    int linear_solver = 2, 
-    double space_tolerance_ratio = -1.0) {
+// Rcpp::List admm_single_lambda_with_tracking(NumericVector x,
+//     Eigen::VectorXd& y, const Eigen::ArrayXd& weights, int k,
+//     double lam, int max_iter, double rho,
+//     bool tridiag=false) {
+//
+//   int n = x.size();
+//
+//   // Initialize difference matrices and other helper objects
+//   SparseMatrix<double> penalty_mat = get_penalty_mat(k+1, x);
+//   SparseMatrix<double> dk_mat = get_dk_mat(k, x, false);
+//   VectorXd wy = (y.array()*weights).matrix();
+//
+//   // Initialize theta, alpha, u
+//   VectorXd theta = project_polynomials(x, y, weights, k);
+//   VectorXd alpha = dk_mat * theta;
+//   VectorXd u = init_u((theta-y)/rho, x, k, weights);
+//   VectorXd tmp(n-k);
+//
+//   // Form Gram matrix and set up linear system for theta update
+//   SparseMatrix<double> A = rho * (dk_mat.transpose() * dk_mat);
+//   A.diagonal().array() += weights;
+//   A.makeCompressed();
+//
+//   if (tridiag & (k != 1)) {
+//     throw std::invalid_argument("`tridiag` can only be used with k=1.");
+//   }
+//   LinearSystem linear_system;
+//   linear_system.compute(A, tridiag);
+//
+//   // Perform ADMM updates
+//   int computation_info;
+//   MatrixXd theta_mat(n, max_iter);
+//   VectorXd objective_vec(max_iter);
+//   int iter = 0;
+//   theta_mat.col(iter) = theta;
+//   objective_vec[iter] = tf_objective(y, theta, x, weights, lam, k);
+//   VectorXd best_theta = theta;
+//   double best_objective = objective_vec[iter];
+//   for (iter = 1; iter < max_iter; iter++) {
+//     // theta update
+//     std::tie(theta, computation_info) = linear_system.solve(
+//         wy + rho * (dk_mat.transpose() * (alpha + u)),
+//         tridiag);
+//     // if (computation_info > 1) {
+//     //   std::cerr << "Eigen Sparse QR solve returned nonzero exit status.\n";
+//     // }
+//     tmp = dk_mat*theta - u;
+//     // alpha update
+//     alpha = tf_dp(tmp, lam/rho);
+//     // u update
+//     u += alpha - dk_mat*theta;
+//     objective_vec[iter] = tf_objective(y, theta, x, weights, lam, k);
+//     theta_mat.col(iter) = theta;
+//     if (objective_vec[iter] < best_objective) {
+//       best_objective = objective_vec[iter];
+//       best_theta = theta;
+//     }
+//   }
+//   // TODO: Implement stopping criterion
+//   Rcpp::List return_list = Rcpp::List::create(
+//       Rcpp::Named("theta") = best_theta,
+//       Rcpp::Named("objective") = objective_vec,
+//       Rcpp::Named("theta_mat") = theta_mat,
+//       Rcpp::Named("computation_info") = computation_info);
+//   return return_list;
+// }
 
-  int n = x.size();
-
-  // Initialize difference matrices and other helper objects
-  SparseMatrix<double> penalty_mat = get_penalty_mat(k+1, x);
-  SparseMatrix<double> dk_mat = get_dk_mat(k, x, false);
-  SparseMatrix<double> dk_mat_sq = dk_mat.transpose() * dk_mat;
-  
-  // check if `x` is equally spaced
-  bool equal_space = false;
-  MatrixXd denseD;
-  VectorXd s_seq;
-  if (linear_solver == 2) {
-    equal_space = is_equal_space(x, space_tolerance_ratio < 0 ? std::sqrt(
-      Eigen::NumTraits<double>::epsilon()) : space_tolerance_ratio);
-    denseD = MatrixXd::Zero(n - k, k + 1);
-    s_seq = equal_space ? VectorXd::Zero(1) : VectorXd::Zero(n);
-    configure_denseD(x, denseD, s_seq, dk_mat, k, equal_space);   
-  }
-
-  VectorXd wy = (y.array()*weights).matrix();
-
-  // Initialize theta, alpha, u
-  VectorXd theta = project_polynomials(x, y, weights, k);
-  VectorXd alpha = dk_mat * theta;
-  VectorXd u = init_u((theta-y)/rho, x, k, weights);
-  VectorXd tmp(n-k);
-
-  if ((linear_solver == 0) & (k != 1)) {
-    throw std::invalid_argument("`tridiag` can only be used with k=1.");
-  }
-  LinearSystem linear_system;
-  linear_system.construct(y, weights, k, rho, dk_mat_sq, denseD, s_seq, linear_solver);
-  linear_system.compute(linear_solver);
-
-  // Perform ADMM updates
-  int computation_info;
-  MatrixXd theta_mat(n, max_iter);
-  VectorXd objective_vec(max_iter);
-  int iter = 0;
-  theta_mat.col(iter) = theta;
-  objective_vec[iter] = tf_objective(y, theta, x, weights, lam, k);
-  VectorXd best_theta = theta;
-  double best_objective = objective_vec[iter];
-  for (iter = 1; iter < max_iter; iter++) {
-    // theta update
-    std::tie(theta, computation_info) = linear_system.solve(y, weights, 
-        alpha + u, k, x, rho, denseD, s_seq, linear_solver, equal_space);
-    // if (computation_info > 1) {
-    //   std::cerr << "Eigen Sparse QR solve returned nonzero exit status.\n";
-    // }
-    tmp = dk_mat*theta - u;
-    // alpha update
-    tf_dp(n-k, tmp.data(), lam/rho, alpha.data());
-    // u update
-    u += alpha - dk_mat*theta;
-    objective_vec[iter] = tf_objective(y, theta, x, weights, lam, k);
-    theta_mat.col(iter) = theta;
-    if (objective_vec[iter] < best_objective) {
-      best_objective = objective_vec[iter];
-      best_theta = theta;
-    }
-  }
-  // TODO: Implement stopping criterion
-  Rcpp::List return_list = Rcpp::List::create(
-      Rcpp::Named("theta")=best_theta,
-      Rcpp::Named("objective")=objective_vec,
-      Rcpp::Named("theta_mat")=theta_mat,
-      Rcpp::Named("computation_info")=computation_info);
-  return return_list;
-}
