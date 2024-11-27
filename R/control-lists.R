@@ -9,7 +9,7 @@
 #' @param tolerance Double. The convergence tolerance for the ADMM algorithm.
 #' @param linear_solver Integer. Solver for the linear system in ADMM when
 #'   k > 1: `kalman_filter` for Kalman filter or `sparse_qr` for sparse QR decomposition.
-#' @param space_tolerance_ratio Double. The tolerance ratio of equally spaced signals.
+#' @param space_tolerance_ratio Double. The tolerance ratio of to detect that the signal is equally spaced.
 #' @param ... not used
 #'
 #' @return an object of class `admm_control`
@@ -28,7 +28,7 @@ admm_control_list <- function(
   assert_numeric(rho_scale, lower = .Machine$double.eps, finite = TRUE, len = 1L)
   assert_numeric(tolerance, lower = .Machine$double.eps, finite = TRUE, len = 1L)
   linear_solver <- rlang::arg_match(linear_solver)
-  assert_numeric(space_tolerance_ratio, lower = sqrt(.Machine$double.eps), finite = TRUE, len = 1L)
+  assert_numeric(space_tolerance_ratio, lower = 0, finite = TRUE, len = 1L)
   structure(enlist(max_iter, rho_scale, tolerance, linear_solver, space_tolerance_ratio),
             class = "admm_control")
 }
