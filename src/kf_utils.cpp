@@ -152,7 +152,8 @@ void df1step(double y, double Z, double H, const Eigen::MatrixXd& A, double RQR,
   if (Finf > tol) {  // should always happen
     a += vt * Kinf / Finf;
     P += Ft * Kinf * Kinf.transpose() / pow(Finf, 2);
-    P -= Kt * Kinf.transpose() / Finf + Kinf * Kt.transpose() / Finf;
+    P -= Kt * Kinf.transpose() / Finf;
+    P -= Kinf * Kt.transpose() / Finf;
     Pinf -= Kinf * Kinf.transpose() / Finf;
   } else {  // should never happen
     Finf = 0;

@@ -23,7 +23,7 @@ test_that("test the error in a difficult setting", {
   b <- diag(w) %*% y + rho * tDkx %*% mn
   theta <- solve(A, b)[,1]
   theta_kf <- linear_single_solve_test(2, y, w, x, rho, mn)
-  saveRDS(theta_kf, "test-KF-case/theta_kf_v3.0.RDS")
+  saveRDS(theta_kf, "test-KF-case/theta_kf_v4.0.RDS")
   #theta_qr <- linear_single_solve_test(1, y, w, x, rho, mn)
   #saveRDS(theta_qr, "test-KF-case/theta_qr.RDS")
 
