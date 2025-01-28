@@ -134,7 +134,6 @@ void df1step(double y, double Z, double H, const Eigen::MatrixXd& A, double RQR,
   Eigen::VectorXd& a, Eigen::MatrixXd& P, Eigen::MatrixXd& Pinf, int& rankp,
   double& vt, double& Ft, double& Finf, Eigen::VectorXd& Kt, Eigen::VectorXd& Kinf) {
   double tol = Eigen::NumTraits<double>::epsilon();
-  tol = std::sqrt(tol);
   int k = a.size();
   MatrixXd Ptemp(k, k);
 
