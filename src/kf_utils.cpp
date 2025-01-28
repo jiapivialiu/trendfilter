@@ -91,7 +91,7 @@ Rcpp::List configure_denseD_test(Rcpp::NumericVector x, int k) {
     VectorXd s_seq = equal_space ? VectorXd::Zero(1) : VectorXd::Zero(n);
   
     configure_denseD(x, denseD, s_seq, dk_mat, k, equal_space);
-    
+
     return Rcpp::List::create(Rcpp::Named("Dk") = dk_mat, Rcpp::Named("s_seq") = s_seq, Rcpp::Named("dense_D") = denseD);
 }
 
@@ -149,12 +149,12 @@ void df1step(double y, double Z, double H, const Eigen::MatrixXd& A, double RQR,
   Kinf = Pinf.col(0) * Z;
   Finf = Z * Kinf(0);
 
+  rankp--;
   if (Finf > tol) {  // should always happen
     a += vt * Kinf / Finf;
     P += Ft * Kinf * Kinf.transpose() / pow(Finf, 2);
     P -= Kt * Kinf.transpose() / Finf + Kinf * Kt.transpose() / Finf;
     Pinf -= Kinf * Kinf.transpose() / Finf;
-    rankp--;
   } else {  // should never happen
     Finf = 0;
     if (Ft > tol) {

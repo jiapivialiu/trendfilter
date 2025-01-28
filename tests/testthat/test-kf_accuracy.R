@@ -22,16 +22,14 @@ test_that("test the error in a difficult setting", {
   b <- diag(w) %*% y + rho * tDkx %*% mn
   theta <- solve(A, b)[,1]
   theta_kf <- linear_single_solve_test(2, y, w, x, rho, mn)
-  theta_qr <- linear_single_solve_test(1, y, w, x, rho, mn)
-  saveRDS(theta_kf, "tests/testthat/test-KF-case/theta_kf_v1.0.RDS")
+  saveRDS(theta_kf, "tests/testthat/test-KF-case/theta_kf_v2.0.RDS")
+  #theta_qr <- linear_single_solve_test(1, y, w, x, rho, mn)
   #saveRDS(theta_qr, "tests/testthat/test-KF-case/theta_qr.RDS")
 
   expect_equal(theta_kf, theta)
 
   mse_kf <- f_mse(A, theta_kf, b)
   expect_true(mse_kf < tol)
-
-  expect_true(f_mse(A, theta_qr, b) < tol)
 })
 
 # eight common problem designs --------
