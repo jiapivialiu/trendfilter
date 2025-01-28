@@ -1,4 +1,40 @@
-# common problem designs
+# averaged squared error between A*x and b in the linear system A*x=b
+f_mse <- function(A, x, b) {
+  return(sum((A %*% x - b)^2) / length(x))
+}
+tol <- 1e-15
+
+# special case --------
+test_case <- readRDS("tests/testthat/test-KF-case/test-case.RDS")
+test_that("test the error in a difficult setting", {
+  y <- test_case$y
+  x <- test_case$x
+  w <- test_case$w
+  k <- test_case$k
+  mn <- test_case$adj_mean
+  rho <- test_case$lambda
+
+  Dkx <- dspline::d_mat(k, x, FALSE)
+  tDkx <- t(as.matrix(Dkx))
+  DtDkx <- crossprod(Dkx)
+
+  A <- diag(w) + rho * DtDkx
+  b <- diag(w) %*% y + rho * tDkx %*% mn
+  theta <- solve(A, b)[,1]
+  theta_kf <- linear_single_solve_test(2, y, w, x, rho, mn)
+  theta_qr <- linear_single_solve_test(1, y, w, x, rho, mn)
+  saveRDS(theta_kf, "tests/testthat/test-KF-case/theta_kf_v1.0.RDS")
+  #saveRDS(theta_qr, "tests/testthat/test-KF-case/theta_qr.RDS")
+
+  expect_equal(theta_kf, theta)
+
+  mse_kf <- f_mse(A, theta_kf, b)
+  expect_true(mse_kf < tol)
+
+  expect_true(f_mse(A, theta_qr, b) < tol)
+})
+
+# eight common problem designs --------
 n <- 10L
 k <- 4L
 
@@ -31,11 +67,6 @@ Dkx1 <- dspline::d_mat(k, x1, FALSE)
 tDkx1 <- t(as.matrix(Dkx1))
 DtDkx1 <- crossprod(Dkx1)
 
-# averaged squared error between A*x and b in the linear system A*x=b
-f_mse <- function(A, x, b) {
-  return(sum((A %*% x - b)^2) / length(x))
-}
-
 test_that("LS: V-shape signals -- Scenario 1", {
   x <- x0
   tDkx <- tDkx0
@@ -50,7 +81,7 @@ test_that("LS: V-shape signals -- Scenario 1", {
   expect_equal(theta_kf, theta)
 
   mse_kf <- f_mse(A, theta_kf, b)
-  expect_true(mse_kf < 1e-15)
+  expect_true(mse_kf < tol)
 })
 test_that("LS: V-shape signals -- Scenario 2", {
   x <- x1
@@ -66,7 +97,7 @@ test_that("LS: V-shape signals -- Scenario 2", {
   expect_equal(theta_kf, theta)
 
   mse_kf <- f_mse(A, theta_kf, b)
-  expect_true(mse_kf < 1e-15)
+  expect_true(mse_kf < tol)
 })
 test_that("LS: V-shape signals -- Scenario 3", {
   x <- x0
@@ -82,7 +113,7 @@ test_that("LS: V-shape signals -- Scenario 3", {
   expect_equal(theta_kf, theta)
 
   mse_kf <- f_mse(A, theta_kf, b)
-  expect_true(mse_kf < 1e-15)
+  expect_true(mse_kf < tol)
 })
 test_that("LS: V-shape signals -- Scenario 4", {
   x <- x0
@@ -98,7 +129,7 @@ test_that("LS: V-shape signals -- Scenario 4", {
   expect_equal(theta_kf, theta)
 
   mse_kf <- f_mse(A, theta_kf, b)
-  expect_true(mse_kf < 1e-15)
+  expect_true(mse_kf < tol)
 })
 test_that("LS: V-shape signals -- Scenario 5", {
   x <- x0
@@ -114,7 +145,7 @@ test_that("LS: V-shape signals -- Scenario 5", {
   expect_equal(theta_kf, theta)
 
   mse_kf <- f_mse(A, theta_kf, b)
-  expect_true(mse_kf < 1e-15)
+  expect_true(mse_kf < tol)
 })
 test_that("LS: V-shape signals -- Scenario 6", {
   x <- x1
@@ -130,7 +161,7 @@ test_that("LS: V-shape signals -- Scenario 6", {
   expect_equal(theta_kf, theta)
 
   mse_kf <- f_mse(A, theta_kf, b)
-  expect_true(mse_kf < 1e-15)
+  expect_true(mse_kf < tol)
 })
 test_that("LS: V-shape signals -- Scenario 7", {
   x <- x1
@@ -146,7 +177,7 @@ test_that("LS: V-shape signals -- Scenario 7", {
   expect_equal(theta_kf, theta)
 
   mse_kf <- f_mse(A, theta_kf, b)
-  expect_true(mse_kf < 1e-15)
+  expect_true(mse_kf < tol)
 })
 test_that("LS: V-shape signals -- Scenario 8", {
   x <- x1
@@ -162,5 +193,5 @@ test_that("LS: V-shape signals -- Scenario 8", {
   expect_equal(theta_kf, theta)
 
   mse_kf <- f_mse(A, theta_kf, b)
-  expect_true(mse_kf < 1e-15)
+  expect_true(mse_kf < tol)
 })
