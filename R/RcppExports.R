@@ -17,6 +17,10 @@ admm_lambda_seq <- function(x, y, weights, k, lambda, nlambda = 50L, lambda_max 
     .Call(`_trendfilter_admm_lambda_seq`, x, y, weights, k, lambda, nlambda, lambda_max, lambda_min, lambda_min_ratio, max_iter, rho_scale, tol, linear_solver, space_tolerance_ratio)
 }
 
+rcpp_tvd <- function(y, lambda) {
+    .Call(`_trendfilter_rcpp_tvd`, y, lambda)
+}
+
 get_dk_mat <- function(k, xd, tf_weighting) {
     .Call(`_trendfilter_get_dk_mat`, k, xd, tf_weighting)
 }
@@ -45,3 +49,7 @@ is_equal_space <- function(x, space_tolerance_ratio) {
     .Call(`_trendfilter_is_equal_space`, x, space_tolerance_ratio)
 }
 
+# Register entry points for exported C++ functions
+methods::setLoadAction(function(ns) {
+    .Call(`_trendfilter_RcppExport_registerCCallable`)
+})

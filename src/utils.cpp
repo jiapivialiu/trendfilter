@@ -3,7 +3,6 @@
 #include <Rcpp.h>
 #include <RcppEigen.h>
 #include <dspline.h>
-#include <tvdenoising.h>
 #include "utils.h"
 
 // [[Rcpp::depends(RcppEigen)]]
@@ -270,8 +269,8 @@ Eigen::VectorXd Dktv(Eigen::VectorXd v, int k, const NumericVector& xd) {
 
 Eigen::VectorXd tf_dp(Eigen::VectorXd v, double lambda) {
    Rcpp::NumericVector nv(Rcpp::wrap(v));
-   Rcpp::NumericVector out = tvdenoising::rcpp_tvd(nv, lambda);
-   return Rcpp::as<Eigen::Map<VectorXd> >(out);
+   Rcpp::NumericVector out = rcpp_tvd(nv, lambda);
+   return Rcpp::as<Eigen::Map<VectorXd>>(out);
  }
 
 // [[Rcpp::export]]

@@ -1,6 +1,10 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <Eigen/Sparse>
+#include <Rcpp.h>
+#include <RcppEigen.h>
+#include <dspline.h>
 using Rcpp::NumericVector;
 using Eigen::SparseMatrix;
 using Eigen::VectorXd;
@@ -47,5 +51,5 @@ Eigen::VectorXd Dkv(Eigen::VectorXd v, int k, const NumericVector& xd,
 Eigen::VectorXd Dktv(Eigen::VectorXd v, int k, const NumericVector& xd);
 Eigen::VectorXd tf_dp(Eigen::VectorXd v, double lambda);
 
-
+Rcpp::NumericVector rcpp_tvd(NumericVector y, double lambda);
 #endif
