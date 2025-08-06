@@ -26,7 +26,6 @@ void LinearSystem::construct(const Eigen::VectorXd& y, const Eigen::ArrayXd& wei
     int k, double rho, const Eigen::SparseMatrix<double>& dk_mat_sq, 
     const Eigen::MatrixXd& Dseq, const Eigen::VectorXd& s_seq, int solver) {
   switch(solver) {
-    case 0: 
     case 1: {
       wy = (y.array() * weights).matrix();
       // Form Gram matrix and set up linear system for theta update
@@ -52,11 +51,6 @@ void LinearSystem::construct(const Eigen::VectorXd& y, const Eigen::ArrayXd& wei
 
 void LinearSystem::compute(int solver) {
   switch(solver) {
-    case 0: {
-      std::tie(a, b, c) = extract_tridiag(A);
-      cp = tridiag_forward(a, b, c);
-      break;
-    }
     case 1: {
       // Setting the pivot threshold to be negative forces SparseQR to be
       // maximally conservative in dropping columns, which is important when
@@ -81,11 +75,6 @@ std::tuple<VectorXd,int> LinearSystem::solve(const Eigen::VectorXd& y,
     const Eigen::VectorXd& s_seq, int solver, bool equal_space) {
   int info = 0;
   switch(solver) {
-    case 0: {
-      VectorXd v = wy + rho * Dktv(adj_mean, k, x); 
-      sol = tridiag_backsolve(a, b, cp, v);
-      break;
-    }
     case 1: {
       VectorXd v = wy + rho * Dktv(adj_mean, k, x);
       sol = qr.solve(v);

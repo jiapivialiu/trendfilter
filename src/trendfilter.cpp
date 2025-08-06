@@ -150,22 +150,6 @@ Rcpp::List admm_lambda_seq(
   Rcpp::IntegerVector iters(nlambda);
   Rcpp::IntegerVector dof(nlambda);
 
-  // Use DP solution for k=0.
-  if (k == 0) {
-    for (int i = 0; i < nlambda; i++) {
-      theta.col(i) = tf_dp_weight(y, lambda[i], weights);
-      objective_val[i] = tf_objective(y, theta.col(i), x, weights, lambda[i], k);
-      dof[i] = calc_degrees_of_freedom(theta.col(i), k);
-    }
-    Rcpp::List out = Rcpp::List::create(
-      Rcpp::Named("theta") = theta,
-      Rcpp::Named("lambda") = lambda,
-      Rcpp::Named("tf_objective") = objective_val,
-      Rcpp::Named("iters") = iters
-    );
-    return out;
-  }
-
 
   // Initialize difference matrices and other helper objects
   SparseMatrix<double> dk_mat = get_dk_mat(k, x, false);

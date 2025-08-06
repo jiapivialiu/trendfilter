@@ -46,7 +46,6 @@ Eigen::VectorXd Dkv(Eigen::VectorXd v, int k, const NumericVector& xd,
                     bool tf_weighting = false);
 Eigen::VectorXd Dktv(Eigen::VectorXd v, int k, const NumericVector& xd);
 Eigen::VectorXd tf_dp(Eigen::VectorXd v, double lambda);
-Eigen::VectorXd tf_dp_weight(Eigen::VectorXd v, double lambda, Eigen::ArrayXd w);
 
 
 #endif

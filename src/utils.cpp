@@ -274,14 +274,6 @@ Eigen::VectorXd tf_dp(Eigen::VectorXd v, double lambda) {
    return Rcpp::as<Eigen::Map<VectorXd> >(out);
  }
 
-Eigen::VectorXd tf_dp_weight(Eigen::VectorXd v, double lambda,
-                             Eigen::ArrayXd w) {
-  Rcpp::NumericVector nv(Rcpp::wrap(v));
-  Rcpp::NumericVector nw(Rcpp::wrap(w));
-  Rcpp::NumericVector out = tvdenoising::rcpp_wtvd(nv, lambda, nw);
-  return Rcpp::as<Eigen::Map<VectorXd> >(out);
-}
-
 // [[Rcpp::export]]
 bool is_equal_space(Rcpp::NumericVector x, double space_tolerance_ratio) {
   bool equal_space = TRUE;

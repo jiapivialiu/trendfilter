@@ -155,7 +155,7 @@ trendfilter <- function(y,
     lambda, nlambda, lambda_max, lambda_min, lambda_min_ratio,
     control$admm_control$max_iter, control$admm_control$rho_scale,
     control$admm_control$tolerance,
-    if (k == 1L) 0L else match(control$admm_control$linear_solver, c("sparse_qr", "kalman_filter", "cholesky")),
+    control$admm_control$linear_solver, c("sparse_qr", "kalman_filter", "cholesky"),
     control$admm_control$space_tolerance_ratio
   )
 
