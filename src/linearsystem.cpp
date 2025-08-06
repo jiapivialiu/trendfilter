@@ -69,7 +69,6 @@ void LinearSystem::compute(int solver) {
     case 2:
       break;
     case 3: {
-      Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> cholesky;
       cholesky.compute(A);
       break;
     }
