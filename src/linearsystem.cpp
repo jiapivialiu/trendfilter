@@ -40,6 +40,13 @@ void LinearSystem::construct(const Eigen::VectorXd& y, const Eigen::ArrayXd& wei
       LinearSystem::kf_init(n, k, rho, Dseq, s_seq);
       break;
     }
+    case 3: {
+      wy = (y.array() * weights).matrix();
+      A = rho * dk_mat_sq;
+      A.diagonal().array() += weights;
+      A.makeCompressed();
+      break;
+    }
   } 
 }
 
@@ -61,6 +68,11 @@ void LinearSystem::compute(int solver) {
     }
     case 2:
       break;
+    case 3: {
+      Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> cholesky;
+      cholesky.compute(A);
+      break;
+    }
   }
 }
 
@@ -83,6 +95,12 @@ std::tuple<VectorXd,int> LinearSystem::solve(const Eigen::VectorXd& y,
     }
     case 2: {
       LinearSystem::kf_iter(y, weights, adj_mean, Dseq, s_seq, equal_space);
+      break;
+    }
+    case 3: {
+      VectorXd v = wy + rho * Dktv(adj_mean, k, x);
+      sol = cholesky.solve(v);
+      info = int(cholesky.info());
       break;
     }
   }
